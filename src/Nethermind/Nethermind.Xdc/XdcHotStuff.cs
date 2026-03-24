@@ -426,7 +426,12 @@ namespace Nethermind.Xdc
             else
             {
                 var epochSwitchInfo = _epochSwitchManager.GetEpochSwitchInfo(currentHead);
-                currentMasternodes = epochSwitchInfo.Masternodes;
+                currentMasternodes = epochSwitchInfo?.Masternodes;
+            }
+
+            if (currentMasternodes is null || currentMasternodes.Length == 0)
+            {
+                throw new InvalidOperationException($"No masternodes available for leader selection at round {round}.");
             }
 
             int currentLeaderIndex = ((int)round % spec.EpochLength % currentMasternodes.Length);

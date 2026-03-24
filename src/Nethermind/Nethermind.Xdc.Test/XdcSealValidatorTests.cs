@@ -214,6 +214,70 @@ internal class XdcSealValidatorTests
         Assert.That(validator.ValidateParams(parent, header), Is.EqualTo(expected));
     }
 
+    [Test]
+    public void ValidateParams_MissingEpochInfo_ReturnsFalse()
+    {
+        XdcBlockHeader parent = Build.A.XdcBlockHeader().TestObject;
+
+        PrivateKeyGenerator keyBuilder = new PrivateKeyGenerator();
+        PrivateKey[] masterSigners = Enumerable.Range(0, 3).Select(_ => keyBuilder.Generate()).ToArray();
+        QuorumCertificate qc = CreateQc(new BlockRoundInfo(Hash256.Zero, 1, 1), masterSigners, 1);
+        ExtraFieldsV2 extraFields = new ExtraFieldsV2(2, qc);
+
+        XdcBlockHeaderBuilder headerBuilder = Build.A.XdcBlockHeader();
+        headerBuilder.WithParent(parent);
+        headerBuilder.WithExtraFieldsV2(extraFields);
+        XdcBlockHeader header = headerBuilder.TestObject;
+        header.Validators = Array.Empty<byte>();
+        header.Penalties = Array.Empty<byte>();
+
+        IXdcReleaseSpec releaseSpec = Substitute.For<IXdcReleaseSpec>();
+        releaseSpec.EpochLength.Returns(900);
+        ISpecProvider specProvider = Substitute.For<ISpecProvider>();
+        specProvider.GetSpec(Arg.Any<ForkActivation>()).Returns(releaseSpec);
+
+        IEpochSwitchManager epochSwitchManager = Substitute.For<IEpochSwitchManager>();
+        epochSwitchManager.IsEpochSwitchAtBlock(header).Returns(false);
+        epochSwitchManager.GetEpochSwitchInfo(header).Returns((EpochSwitchInfo?)null);
+
+        XdcSealValidator validator = new XdcSealValidator(Substitute.For<ISnapshotManager>(), epochSwitchManager, specProvider);
+
+        Assert.That(validator.ValidateParams(parent, header, out var error), Is.False);
+        Assert.That(error, Does.Contain("Epoch switch info"));
+    }
+
+    [Test]
+    public void ValidateParams_EmptyMasternodes_ReturnsFalse()
+    {
+        XdcBlockHeader parent = Build.A.XdcBlockHeader().TestObject;
+
+        PrivateKeyGenerator keyBuilder = new PrivateKeyGenerator();
+        PrivateKey[] masterSigners = Enumerable.Range(0, 3).Select(_ => keyBuilder.Generate()).ToArray();
+        QuorumCertificate qc = CreateQc(new BlockRoundInfo(Hash256.Zero, 1, 1), masterSigners, 1);
+        ExtraFieldsV2 extraFields = new ExtraFieldsV2(2, qc);
+
+        XdcBlockHeaderBuilder headerBuilder = Build.A.XdcBlockHeader();
+        headerBuilder.WithParent(parent);
+        headerBuilder.WithExtraFieldsV2(extraFields);
+        XdcBlockHeader header = headerBuilder.TestObject;
+        header.Validators = Array.Empty<byte>();
+        header.Penalties = Array.Empty<byte>();
+
+        IXdcReleaseSpec releaseSpec = Substitute.For<IXdcReleaseSpec>();
+        releaseSpec.EpochLength.Returns(900);
+        ISpecProvider specProvider = Substitute.For<ISpecProvider>();
+        specProvider.GetSpec(Arg.Any<ForkActivation>()).Returns(releaseSpec);
+
+        IEpochSwitchManager epochSwitchManager = Substitute.For<IEpochSwitchManager>();
+        epochSwitchManager.IsEpochSwitchAtBlock(header).Returns(false);
+        epochSwitchManager.GetEpochSwitchInfo(header).Returns(new EpochSwitchInfo(Array.Empty<Address>(), [], [], new BlockRoundInfo(Hash256.Zero, 1, 1)));
+
+        XdcSealValidator validator = new XdcSealValidator(Substitute.For<ISnapshotManager>(), epochSwitchManager, specProvider);
+
+        Assert.That(validator.ValidateParams(parent, header, out var error), Is.False);
+        Assert.That(error, Does.Contain("Snap shot returned no master nodes"));
+    }
+
     private static QuorumCertificate CreateQc(BlockRoundInfo roundInfo, PrivateKey[] keys, ulong gapNumber)
     {
         EthereumEcdsa ecdsa = new EthereumEcdsa(0);
