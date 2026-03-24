@@ -4,6 +4,7 @@
 using FluentAssertions;
 using Nethermind.Blockchain;
 using Nethermind.Core;
+using Nethermind.Core.Crypto;
 using Nethermind.Core.Specs;
 using Nethermind.Core.Test.Builders;
 using Nethermind.Db;
@@ -12,6 +13,7 @@ using Nethermind.Xdc.Spec;
 using Nethermind.Xdc.Types;
 using NSubstitute;
 using NUnit.Framework;
+using System;
 
 namespace Nethermind.Xdc.Test;
 
@@ -173,5 +175,32 @@ internal class SnapshotManagerTests
 
         blockTree.NewHeadBlock += Raise.EventWith(new BlockEventArgs(new Block(header)));
         snapshotManager.GetSnapshotByGapNumber(header.Number)!.HeaderHash.Should().Be(header.Hash!);
+    }
+
+    [Test]
+    public void CalculateNextEpochMasternodes_AllPenalized_Throws()
+    {
+        IXdcReleaseSpec releaseSpec = Substitute.For<IXdcReleaseSpec>();
+        releaseSpec.EpochLength.Returns(900);
+        releaseSpec.Gap.Returns(450);
+        releaseSpec.MaxMasternodes.Returns(100);
+        releaseSpec.SwitchBlock.Returns(0);
+
+        IPenaltyHandler penaltyHandler = Substitute.For<IPenaltyHandler>();
+        IBlockTree blockTree = Substitute.For<IBlockTree>();
+        ISpecProvider specProvider = Substitute.For<ISpecProvider>();
+        IMasternodeVotingContract votingContract = Substitute.For<IMasternodeVotingContract>();
+        SnapshotManager snapshotManager = new SnapshotManager(new MemDb(), blockTree, penaltyHandler, votingContract, specProvider);
+
+        XdcBlockHeader header = Build.A.XdcBlockHeader().WithNumber(0).TestObject;
+        blockTree.FindHeader(0).Returns(header);
+        Snapshot snapshot = new Snapshot(0, header.Hash!, new[] { TestItem.AddressA, TestItem.AddressB });
+        snapshotManager.StoreSnapshot(snapshot);
+
+        penaltyHandler.HandlePenalties(Arg.Any<long>(), Arg.Any<Hash256>(), Arg.Any<Address[]>())
+            .Returns(snapshot.NextEpochCandidates);
+
+        Assert.Throws<InvalidOperationException>(() =>
+            snapshotManager.CalculateNextEpochMasternodes(2, header.ParentHash ?? Hash256.Zero, releaseSpec));
     }
 }

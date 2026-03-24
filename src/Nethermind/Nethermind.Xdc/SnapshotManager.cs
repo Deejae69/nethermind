@@ -99,9 +99,11 @@ internal class SnapshotManager : ISnapshotManager
             if (candidates.Length > maxMasternodes)
             {
                 Array.Resize(ref candidates, maxMasternodes);
+                EnsureMasternodesAvailable(candidates, blockNumber);
                 return (candidates, []);
             }
 
+            EnsureMasternodesAvailable(candidates, blockNumber);
             return (candidates, []);
         }
 
@@ -112,7 +114,16 @@ internal class SnapshotManager : ISnapshotManager
             .Take(maxMasternodes)     // enforce max cap
             .ToArray();
 
+        EnsureMasternodesAvailable(candidates, blockNumber);
         return (candidates, penalties);
+    }
+
+    private static void EnsureMasternodesAvailable(Address[] masternodes, long blockNumber)
+    {
+        if (masternodes.Length == 0)
+        {
+            throw new InvalidOperationException($"No masternodes available for block #{blockNumber} after applying penalties.");
+        }
     }
 
     private void OnNewHeadBlock(object? sender, BlockEventArgs e)
