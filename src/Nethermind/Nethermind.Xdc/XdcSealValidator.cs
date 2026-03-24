@@ -103,7 +103,7 @@ internal class XdcSealValidator(ISnapshotManager snapshotManager, IEpochSwitchMa
             masternodes = epochSwitchInfo.Masternodes;
             if (masternodes is null || masternodes.Length == 0)
             {
-                error = $"Snap shot returned no master nodes for header \n{xdcHeader}";
+                error = $"Snapshot returned no master nodes for header \n{xdcHeader}";
                 return false;
             }
         }

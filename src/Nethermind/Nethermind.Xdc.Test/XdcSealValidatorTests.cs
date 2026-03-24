@@ -275,7 +275,7 @@ internal class XdcSealValidatorTests
         XdcSealValidator validator = new XdcSealValidator(Substitute.For<ISnapshotManager>(), epochSwitchManager, specProvider);
 
         Assert.That(validator.ValidateParams(parent, header, out var error), Is.False);
-        Assert.That(error, Does.Contain("Snap shot returned no master nodes"));
+        Assert.That(error, Does.Contain("Snapshot returned no master nodes"));
     }
 
     private static QuorumCertificate CreateQc(BlockRoundInfo roundInfo, PrivateKey[] keys, ulong gapNumber)
