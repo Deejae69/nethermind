@@ -4,6 +4,7 @@
 using FluentAssertions;
 using Nethermind.Blockchain;
 using Nethermind.Core;
+using Nethermind.Core.Crypto;
 using Nethermind.Core.Specs;
 using Nethermind.Core.Test.Builders;
 using Nethermind.Db;
@@ -152,6 +153,37 @@ internal class SnapshotManagerTests
 
         // assert that it was retrieved from db
         result.Should().BeEquivalentTo(snapshot);
+    }
+
+    [Test]
+    public void CalculateNextEpochMasternodes_AllPenalized_Throws()
+    {
+        // Arrange
+        IXdcReleaseSpec releaseSpec = Substitute.For<IXdcReleaseSpec>();
+        releaseSpec.EpochLength.Returns(900);
+        releaseSpec.Gap.Returns(450);
+        releaseSpec.MaxMasternodes.Returns(108);
+        releaseSpec.SwitchBlock.Returns(0L);
+
+        IPenaltyHandler penaltyHandler = Substitute.For<IPenaltyHandler>();
+        IBlockTree blockTree = Substitute.For<IBlockTree>();
+        SnapshotManager snapshotManager = new SnapshotManager(new MemDb(), blockTree, penaltyHandler, Substitute.For<IMasternodeVotingContract>(), Substitute.For<ISpecProvider>());
+
+        const int gapBlock = 0;
+        XdcBlockHeader header = Build.A.XdcBlockHeader().TestObject;
+        Address[] candidates = [Address.FromNumber(1), Address.FromNumber(2)];
+        var snapshot = new Snapshot(gapBlock, header.Hash!, candidates);
+        snapshotManager.StoreSnapshot(snapshot);
+        blockTree.FindHeader(gapBlock).Returns(header);
+
+        // All candidates are penalized
+        penaltyHandler.HandlePenalties(Arg.Any<long>(), Arg.Any<Hash256>(), Arg.Any<Address[]>())
+            .Returns(candidates);
+
+        // Act & Assert
+        Assert.That(
+            () => snapshotManager.CalculateNextEpochMasternodes(900, header.Hash!, releaseSpec),
+            Throws.InvalidOperationException);
     }
 
     [TestCase(450)]

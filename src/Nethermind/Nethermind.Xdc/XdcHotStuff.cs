@@ -426,6 +426,8 @@ namespace Nethermind.Xdc
             else
             {
                 var epochSwitchInfo = _epochSwitchManager.GetEpochSwitchInfo(currentHead);
+                if (epochSwitchInfo is null || epochSwitchInfo.Masternodes is null || epochSwitchInfo.Masternodes.Length == 0)
+                    throw new InvalidOperationException($"No masternode data available for block #{currentHead.Number}.");
                 currentMasternodes = epochSwitchInfo.Masternodes;
             }
 
