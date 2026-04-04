@@ -1,0 +1,23 @@
+{
+  "exchange": "binance",
+  "api_key": "",
+  "api_secret": "",
+  "sandbox": true,
+  "symbol": "BTC/USDT",
+  "timeframe": "1h",
+  "candle_limit": 100,
+  "strategy": "momentum",
+  "short_window": 10,
+  "long_window": 30,
+  "stop_loss_pct": 2.0,
+  "take_profit_pct": 5.0,
+  "max_position_pct": 10.0,
+  "leverage": 1.0,
+  "commission_pct": 0.1,
+  "initial_capital": 10000.0,
+  "poll_interval_seconds": 60,
+  "dry_run": true,
+  "lstm_epochs": 20,
+  "look_back": 20,
+  "lstm_pretrain_candles": 500
+}

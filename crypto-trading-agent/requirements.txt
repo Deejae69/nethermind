@@ -1,0 +1,8 @@
+ccxt>=4.3.0
+numpy>=1.26.0
+pandas>=2.2.0
+scikit-learn>=1.4.0
+# Deep-learning (optional – required only for the LSTM strategy)
+# tensorflow>=2.16.0
+# Uncomment the line above or install PyTorch instead:
+# torch>=2.2.0
