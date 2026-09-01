@@ -112,7 +112,15 @@ internal class SnapshotManager : ISnapshotManager
             .Take(maxMasternodes)     // enforce max cap
             .ToArray();
 
+        EnsureMasternodesAvailable(candidates);
+
         return (candidates, penalties);
+    }
+
+    private static void EnsureMasternodesAvailable(Address[] candidates)
+    {
+        if (candidates.Length == 0)
+            throw new InvalidOperationException("No masternodes available after applying penalties.");
     }
 
     private void OnNewHeadBlock(object? sender, BlockEventArgs e)
